@@ -4,6 +4,7 @@ Module for interacting with PostgreSQL
 import psycopg, logging
 from typing import Any
 from psycopg import sql
+logger = logging.getLogger("db")
 
 __all__ = ["SCHEMA", "start", "run", "single", "multiple", "insert", "delete", "get", "table"]
 
@@ -21,13 +22,13 @@ def check_connection():
     cursor.execute("SELECT version();")
     db_version = cursor.fetchone()
     
-    logging.info("Connection Successful")
-    logging.info(f"PostgreSQL version: {db_version[0]}")
+    logger.info("Connection Successful")
+    logger.info(f"PostgreSQL version: {db_version[0]}")
 
 def close_connection():
     cursor.close()
     connection.close()
-    logging.info("Database connection closed.")
+    logger.info("Database connection closed.")
 
 def run(*args):
     cursor.execute(*args)
@@ -118,7 +119,7 @@ def get(table: str, value: tuple[Any], key: tuple[str], column: tuple[str]):
 def start(schema: str, host: str, name: str, user: str, password: str, port: int):
     global SCHEMA, connection, cursor
     SCHEMA = sql.Identifier(schema)
-    logging.info("Connecting to database...")
+    logger.info("Connecting to database...")
     connection = psycopg.connect(
         host=host,
         dbname=name,
@@ -128,5 +129,5 @@ def start(schema: str, host: str, name: str, user: str, password: str, port: int
     )
     cursor = connection.cursor()
     check_connection()
-    logging.info("Connected to database.")
+    logger.info("Connected to database.")
     connection.execute(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA.as_string()};")

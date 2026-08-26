@@ -1,4 +1,5 @@
 import asyncio, logging
+logger = logging.getLogger("ipc:client")
 __all__ = ["Connector"]
 
 class Connector:
@@ -13,11 +14,11 @@ class Connector:
         self.command_queue: asyncio.Queue[bytes] = asyncio.Queue(10)
 
     async def start(self):
-        logging.info(f"Connecting to server at {self.HOST}:{self.PORT}...")
+        logger.info(f"Connecting to server at {self.HOST}:{self.PORT}...")
         
         # Establish the asynchronous socket connection
         reader, writer = await asyncio.open_connection(self.HOST, self.PORT)
-        logging.info("Connected successfully!")
+        logger.info("Connected successfully!")
         
         # Start the background listening loop as a concurrent task
         listen_task = asyncio.create_task(self._listen(reader))
@@ -36,13 +37,13 @@ class Connector:
             while True:
                 data = await reader.read(1024)
                 if not data:
-                    logging.error("[DISCONNECTED] Server closed the connection.")
+                    logger.error("[DISCONNECTED] Server closed the connection.")
                     break
                 await self.on_message(data)
         except asyncio.CancelledError:
             pass
         except Exception as e:
-            logging.error(f"[ERROR] Reading error: {e}")
+            logger.error(f"[ERROR] Reading error: {e}")
 
     async def on_message(self, message: bytes):
         """
@@ -66,12 +67,12 @@ class Connector:
                     continue
                     
                 if message.lower() == b"exit":
-                    logging.info("Closing connection...")
+                    logger.info("Closing connection...")
                     break
                     
                 writer.write(message)
                 await writer.drain()
                 
         except Exception as e:
-            logging.error(f"Writing error: {e}")
+            logger.error(f"Writing error: {e}")
     
