@@ -1,2 +1,2 @@
-from . import db, jsonIO
-__all__ = ["db", "jsonIO"]
+from . import db, jsonIO, ipc
+__all__ = ["db", "jsonIO", "ipc"]
