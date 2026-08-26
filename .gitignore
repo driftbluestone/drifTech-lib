@@ -2,3 +2,4 @@ __pycache__
 TOKEN.txt
 test.py
 build.txt
+dist

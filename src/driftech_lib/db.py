@@ -5,7 +5,7 @@ import psycopg, logging
 from typing import Any
 from psycopg import sql
 
-__all__ = ["SCHEMA", "run", "single", "multiple", "insert", "delete", "get", "table"]
+__all__ = ["SCHEMA", "start", "run", "single", "multiple", "insert", "delete", "get", "table"]
 
 SCHEMA: sql.Identifier = None
 cursor: psycopg.Cursor = None
