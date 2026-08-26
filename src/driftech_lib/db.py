@@ -130,4 +130,4 @@ def start(schema: str, host: str, name: str, user: str, password: str, port: int
     cursor = connection.cursor()
     check_connection()
     logger.info("Connected to database.")
-    connection.execute(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA.as_string()};")
+    run(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA.as_string()};")
