@@ -9,7 +9,7 @@ async def start(HOST, PORT):
 
 async def interface(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     addr = writer.get_extra_info("peername")
-    logging.info(f"[CONNECTION]: Coonnection opened for {addr}")
+    logging.info(f"[CONNECTION]: Connection opened for {addr}")
     try:
         while True:
             data = await reader.read(1024)
