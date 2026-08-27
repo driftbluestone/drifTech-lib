@@ -17,6 +17,7 @@ def table(name: str, columns: list[str]):
     Create a table. Columns should be formatted like `column_name TYPE` e.g. `server_id BIGINT PRIMARY KEY` or `data JSONB`
     """
     run(f"CREATE TABLE IF NOT EXISTS {SCHEMA.as_string()}.{name} ({", ".join(columns)});")
+    logger.info(f"Created table {name} if it didn't already exist")
 
 def check_connection():
     cursor.execute("SELECT version();")
@@ -131,3 +132,4 @@ def start(schema: str, host: str, name: str, user: str, password: str, port: int
     check_connection()
     logger.info("Connected to database.")
     run(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA.as_string()};")
+    logger.info(f"Created schema {schema} if it didn't already exist")
