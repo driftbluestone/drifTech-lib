@@ -11,6 +11,7 @@ async def start(HOST = "127.0.0.1", PORT = 8000):
         await server.serve_forever()
 
 async def interface(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    global open_connections
     addr = writer.get_extra_info("peername")
     logger.info(f"[CONNECTION] Connection opened for {addr} #{open_connections}")
     open_connections += 1
