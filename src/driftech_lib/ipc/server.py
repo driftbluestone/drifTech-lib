@@ -69,7 +69,7 @@ class Server:
         except Exception as e:
             logger.error(f"[ERROR] Reading error: {e}")
 
-    async def on_message(self):
+    async def on_message(self, message: bytes):
         """Override this function."""
         pass
 
