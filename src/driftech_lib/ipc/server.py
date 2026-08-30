@@ -1,7 +1,7 @@
-import asyncio, logging, sys
-logger = logging.getLogger("ipc:server")
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-__all__ = ["Server", "connections"]
+import asyncio
+from .. import logging
+logger = logging.Logger("ipc/server")
+__all__ = ["Server", "connections", "logger"]
 Port = int
 
 conn_count = 1
@@ -96,5 +96,3 @@ class Server:
                 
         except Exception as e:
             logger.error(f"Writing error: {e}")
-
-asyncio.run(Server().start())

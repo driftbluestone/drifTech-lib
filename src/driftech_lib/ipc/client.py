@@ -1,6 +1,7 @@
-import asyncio, logging
-logger = logging.getLogger("ipc:client")
-__all__ = ["Connector"]
+import asyncio
+from .. import logging
+logger = logging.Logger("ipc/client")
+__all__ = ["Connector", "logger"]
 
 class Connector:
     """

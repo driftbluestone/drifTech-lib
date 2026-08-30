@@ -1,12 +1,13 @@
 """
 Module for interacting with PostgreSQL
 """
-import psycopg, logging
+import psycopg
 from typing import Any
 from psycopg import sql
-logger = logging.getLogger("db")
+from . import logging
+logger = logging.Logger("db")
 
-__all__ = ["SCHEMA", "start", "run", "single", "multiple", "insert", "delete", "get", "table"]
+__all__ = ["SCHEMA", "start", "run", "single", "multiple", "insert", "delete", "get", "table", "logger"]
 
 SCHEMA: sql.Identifier = None
 cursor: psycopg.Cursor = None
