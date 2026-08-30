@@ -1,9 +1,7 @@
 import asyncio
-from uuid import uuid4
 from .. import logging
 logger = logging.Logger("ipc/server")
 __all__ = ["Server", "ConcurrentServer", "logger"]
-Port = int
 
 class Server:
     """
@@ -27,7 +25,7 @@ class Server:
         self.writer = writer
         self.command_queue: asyncio.Queue[bytes] = asyncio.Queue(10)
         self.conn_count = 1
-        self.connections: dict[Port, Server] = {}
+        self.connections: dict[int, Server] = {}
 
     async def start(self, HOST = "127.0.0.1", PORT = 8000):
         server = await asyncio.start_server(self._interface, HOST, PORT)
