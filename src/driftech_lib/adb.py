@@ -1,7 +1,7 @@
 """
-Module for interacting with PostgreSQL.
+Asyncio implementation of db.
 """
-import psycopg
+import asyncio, psycopg
 from typing import Any
 from psycopg import sql
 from . import logging
@@ -13,41 +13,41 @@ SCHEMA: sql.Identifier = None
 cursor: psycopg.Cursor = None
 connection: psycopg.Connection = None
 
-def table(name: str, columns: list[str]):
+async def table(name: str, columns: list[str]):
     """
     Create a table. Columns should be formatted like `column_name TYPE` e.g. `server_id BIGINT PRIMARY KEY` or `data JSONB`
     """
-    run(f"CREATE TABLE IF NOT EXISTS {SCHEMA.as_string()}.{name} ({", ".join(columns)});")
+    await run(f"CREATE TABLE IF NOT EXISTS {SCHEMA.as_string()}.{name} ({", ".join(columns)});")
     logger.info(f"Created table {name} if it didn't already exist")
 
-def check_connection():
-    cursor.execute("SELECT version();")
-    db_version = cursor.fetchone()
+async def check_connection():
+    await cursor.execute("SELECT version();")
+    db_version = await cursor.fetchone()
     
     logger.info("Connection Successful")
     logger.info(f"PostgreSQL version: {db_version[0]}")
 
-def close_connection():
-    cursor.close()
-    connection.close()
+async def close_connection():
+    await cursor.close()
+    await connection.close()
     logger.info("Database connection closed.")
 
-def run(*args):
-    cursor.execute(*args)
-    connection.commit()
+async def run(*args):
+    await cursor.execute(*args)
+    await connection.commit()
 
-def single(*args):
-    cursor.execute(*args)
-    result = cursor.fetchone()
+async def single(*args):
+    await cursor.execute(*args)
+    result = await cursor.fetchone()
     if isinstance(result, tuple) and len(result) == 1:
         return result[0]
     return result
 
-def multiple(*args):
-    cursor.execute(*args)
-    return cursor.fetchall()
+async def multiple(*args):
+    await cursor.execute(*args)
+    return await cursor.fetchall()
 
-def insert(table: str, key: tuple[str, ...], field: tuple[str, ...], value: tuple[Any, ...]):
+async def insert(table: str, key: tuple[str, ...], field: tuple[str, ...], value: tuple[Any, ...]):
     """Actually an upsert function."""
     if not isinstance(key, tuple):
         raise ValueError("Argument `key` must be a tuple.")
@@ -76,9 +76,9 @@ def insert(table: str, key: tuple[str, ...], field: tuple[str, ...], value: tupl
             f=sql.Identifier(f)) for f in field if f not in key
         )
     )
-    run(query, value)
+    await run(query, value)
 
-def delete(table: str, key: tuple[str, ...], value: tuple[Any, ...]):
+async def delete(table: str, key: tuple[str, ...], value: tuple[Any, ...]):
     if not isinstance(key, tuple):
         raise ValueError("Argument `key` must be a tuple")
     if not isinstance(value, tuple):
@@ -95,9 +95,9 @@ def delete(table: str, key: tuple[str, ...], value: tuple[Any, ...]):
             k = sql.Identifier(k)) for k in key
         )
     )
-    run(query, value)
+    await run(query, value)
 
-def get(table: str, value: tuple[Any], key: tuple[str], column: tuple[str]):
+async def get(table: str, value: tuple[Any], key: tuple[str], column: tuple[str]):
     if not isinstance(key, tuple):
         raise ValueError("Argument `key` must be a tuple")
     if not isinstance(value, tuple):
@@ -116,13 +116,13 @@ def get(table: str, value: tuple[Any], key: tuple[str], column: tuple[str]):
         )
     )
     
-    return single(query, value)
+    return await single(query, value)
 
-def start(schema: str, host: str, name: str, user: str, password: str, port: int):
+async def start(schema: str, host: str, name: str, user: str, password: str, port: int):
     global SCHEMA, connection, cursor
     SCHEMA = sql.Identifier(schema)
     logger.info("Connecting to database...")
-    connection = psycopg.connect(
+    connection = await psycopg.AsyncConnection.connect(
         host=host,
         dbname=name,
         user=user,
@@ -130,7 +130,9 @@ def start(schema: str, host: str, name: str, user: str, password: str, port: int
         port=port
     )
     cursor = connection.cursor()
-    check_connection()
+    await check_connection()
     logger.info("Connected to database.")
-    run(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA.as_string()};")
+    await run(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA.as_string()};")
     logger.info(f"Created schema {schema} if it didn't already exist")
+
+asyncio.run(start("test", "localhost", "postgres", "postgres", "asdfjkl", "5432"), loop_factory=asyncio.SelectorEventLoop)
