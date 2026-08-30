@@ -112,18 +112,20 @@ class ConcurrentServer():
     async def _interface(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         addr, _ = writer.get_extra_info("peername")
         message = await reader.readline()
-        port, message = message.split(b" ", 1)[0]
-        port = int(port)
+        message = message.split(b" ", 1)[0]
+        
+        port = int(message[0])
         conn = f"{addr}:{port}"
         if self.connections.get(f"{addr}:{port}") is None:
             logger.info(f"[CONNECTION] Connection opened for {conn}")
             heartbeat = asyncio.create_task(self._heartbeat(conn))
             self.connections[conn] = heartbeat
-        
-        if (message == b"exit"):
-            await self._close(conn)
-        else:
-            asyncio.create_task(self.on_message(conn, message))
+        if len(message) != 1:
+            message = message[1]
+            if (message == b"exit"):
+                await self._close(conn)
+            else:
+                asyncio.create_task(self.on_message(conn, message))
         writer.close()
         await writer.wait_closed()
 
