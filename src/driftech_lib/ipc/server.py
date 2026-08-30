@@ -112,7 +112,7 @@ class ConcurrentServer():
     async def _interface(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         addr, _ = writer.get_extra_info("peername")
         message = await reader.readline()
-        message = message.split(b" ", 1)[0]
+        message = message.split(b" ", 1)
         
         port = int(message[0])
         conn = f"{addr}:{port}"
