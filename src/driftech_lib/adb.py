@@ -134,5 +134,3 @@ async def start(schema: str, host: str, name: str, user: str, password: str, por
     logger.info("Connected to database.")
     await run(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA.as_string()};")
     logger.info(f"Created schema {schema} if it didn't already exist")
-
-asyncio.run(start("test", "localhost", "postgres", "postgres", "asdfjkl", "5432"), loop_factory=asyncio.SelectorEventLoop)
