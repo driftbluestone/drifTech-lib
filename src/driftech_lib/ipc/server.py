@@ -110,10 +110,9 @@ class ConcurrentServer():
         await Server.start(self, self.HOST, self.PORT)
 
     async def _interface(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-        addr, port = writer.get_extra_info("peername")
+        addr, _ = writer.get_extra_info("peername")
         message = await reader.readline()
-        if message.startswith(b"connreq:"):
-            port = int(message.split(b":")[1])
+        port = int(message.split(b" ")[0])
         conn = f"{addr}:{port}"
         if self.connections.get(f"{addr}:{port}") is None:
             logger.info(f"[CONNECTION] Connection opened for {conn}")
@@ -130,6 +129,8 @@ class ConcurrentServer():
     async def send_message(self, target: str, message: bytes):
         if isinstance(message, str):
             message = message.encode()
+        if not message.endswith(b"\n"):
+            message += b"\n"
         await self.command_queue.put((target, message))
 
     async def _close(self, conn: str):

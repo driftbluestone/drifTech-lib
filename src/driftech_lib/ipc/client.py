@@ -128,6 +128,9 @@ class ConcurrentClient(server.ConcurrentServer):
     async def send_message(self, message):
         if isinstance(message, str):
             message = message.encode()
+        message = str(self.PORT).encode() + message
+        if not message.endswith(b"\n"):
+            message += b"\n"
         await self.command_queue.put(message)
 
     async def _send(self):
