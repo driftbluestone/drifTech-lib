@@ -4,9 +4,9 @@ __all__ = ["Connector"]
 
 class Connector:
     """
-    Inherit this class to overwrite the on_message() function
+    Inherit this class to overwrite the on_message() function.
 
-    run await Connector().start() to connect to DCM-core
+    Run `await Connector().start()` to initialize a connection.
     """
     def __init__(self, HOST, PORT):
         self.HOST = HOST
@@ -35,7 +35,7 @@ class Connector:
         """Background task to continuously read any data pushed by the server."""
         try:
             while True:
-                data = await reader.read(1024)
+                data = await reader.readline()
                 if not data:
                     logger.error("[DISCONNECTED] Server closed the connection.")
                     break
@@ -46,9 +46,7 @@ class Connector:
             logger.error(f"[ERROR] Reading error: {e}")
 
     async def on_message(self, message: bytes):
-        """
-        Override this function
-        """
+        """Override this function."""
         pass
 
     async def send_message(self, message: str | bytes):
@@ -57,7 +55,6 @@ class Connector:
         await self.command_queue.put(message)
 
     async def _send(self, writer: asyncio.StreamWriter):
-        loop = asyncio.get_running_loop()
         try:
             while True:
                 user_input: bytes = await self.command_queue.get()
