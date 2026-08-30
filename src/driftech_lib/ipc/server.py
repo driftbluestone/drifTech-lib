@@ -112,7 +112,8 @@ class ConcurrentServer():
     async def _interface(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         addr, _ = writer.get_extra_info("peername")
         message = await reader.readline()
-        port = int(message.split(b" ")[0])
+        port, message = message.split(b" ", 1)[0]
+        port = int(port)
         conn = f"{addr}:{port}"
         if self.connections.get(f"{addr}:{port}") is None:
             logger.info(f"[CONNECTION] Connection opened for {conn}")

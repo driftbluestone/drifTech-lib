@@ -90,7 +90,7 @@ class ConcurrentClient(server.ConcurrentServer):
     
     async def start(self):
         async with server._AsyncConnection(self.HOST, self.CLIENT_PORT) as (reader, writer):
-            writer.write(f"connreq:{self.PORT}".encode())
+            writer.write(str(self.PORT).encode())
             await writer.drain()
             logger.info(f"[CONNECTION] Connection to {self.HOST}:{self.CLIENT_PORT} opened")
         self.heartbeat = asyncio.create_task(self._heartbeat())
@@ -115,7 +115,7 @@ class ConcurrentClient(server.ConcurrentServer):
             logger.warn("Client did not recieve heartbeat. Retrying connection...")
             try:
                 async with server._AsyncConnection(self.HOST, self.CLIENT_PORT) as (reader, writer):
-                    writer.write(f"connreq:{self.PORT}".encode())
+                    writer.write(str(self.PORT).encode())
                     await writer.drain()
                     logger.info(f"[CONNECTION] Connection to {self.HOST}:{self.CLIENT_PORT} reopened")
             except ConnectionRefusedError:
