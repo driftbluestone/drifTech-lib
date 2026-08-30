@@ -166,14 +166,14 @@ class ConcurrentServer():
     async def _send(self):
         while True:
             user_input: tuple[str, bytes] = await self.command_queue.get()
-            message = user_input[0].strip()
+            message = user_input[1]
             conn = user_input[0]
             connection = (conn.split(":")[0], int(conn.split(":")[1]))
 
             if not message:
                 continue
             
-            if message.lower() == b"exit":
+            if message.lower().strip() == b"exit":
                 logger.info(f"Closing connection for {conn}")
                 await self._close(conn)
                 break

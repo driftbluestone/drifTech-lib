@@ -90,7 +90,7 @@ class ConcurrentClient(server.ConcurrentServer):
     
     async def start(self):
         async with server._AsyncConnection(self.HOST, self.CLIENT_PORT) as (reader, writer):
-            writer.write(str(self.PORT).encode())
+            writer.write(str(self.PORT).encode() + b"\n")
             await writer.drain()
             logger.info(f"[CONNECTION] Connection to {self.HOST}:{self.CLIENT_PORT} opened")
         self.heartbeat = asyncio.create_task(self._heartbeat())
@@ -129,14 +129,13 @@ class ConcurrentClient(server.ConcurrentServer):
         if isinstance(message, str):
             message = message.encode()
         message = str(self.PORT).encode() + b" " + message
-        if not message.endswith(b"\n"):
-            message += b"\n"
+        
         await self.command_queue.put(message)
 
     async def _send(self):
         while True:
-            user_input = await self.command_queue.get()
-            message = user_input.strip()
+            message = await self.command_queue.get()
+            message = message.strip() + b"\n"
             
             if not message:
                 continue
@@ -144,7 +143,6 @@ class ConcurrentClient(server.ConcurrentServer):
             async with server._AsyncConnection(self.HOST, self.CLIENT_PORT) as (reader, writer):
                 writer.write(message)
                 await writer.drain()
-
-            if message.lower() == b"exit":
+            if message.split(b" ", 1)[1] == b"exit\n":
                 logger.info(f"Closing connection for {self.HOST}:{self.CLIENT_PORT}")
                 break
