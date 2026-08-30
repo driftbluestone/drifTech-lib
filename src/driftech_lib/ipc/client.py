@@ -25,7 +25,8 @@ class Connector:
         listen_task = asyncio.create_task(self._listen(reader))
         
         # Start the foreground writing loop
-        await self._send(writer)
+        self.write_task = asyncio.create_task(self._send(writer))
+        await self.write_task
         
         # Clean up tasks and close connection when exiting
         listen_task.cancel()
@@ -39,6 +40,7 @@ class Connector:
                 data = await reader.readline()
                 if not data:
                     logger.error("[DISCONNECTED] Server closed the connection.")
+                    self.write_task.cancel()
                     break
                 await self.on_message(data)
         except asyncio.CancelledError:

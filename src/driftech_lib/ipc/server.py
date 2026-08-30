@@ -51,7 +51,8 @@ class Server:
     async def _run(self):
         listen_task = asyncio.create_task(self._listen())
 
-        await self._send()
+        self.write_task = asyncio.create_task(self._send())
+        await self.write_task
 
         listen_task.cancel()
         self.writer.close()
@@ -62,6 +63,7 @@ class Server:
             while True:
                 data = await self.reader.readline()
                 if not data:
+                    self.write_task.cancel()
                     break
                 await self.on_message(data)
         except asyncio.CancelledError:
