@@ -8,7 +8,7 @@ build-backend = "uv_build"
 
 [project]
 name = "drifTech-lib"
-version = "0.3.0"
+version = "0.4.0"
 authors = [{name = "driftbluestone", email = "driftbluestone@gmail.com"}]
 description = "Common files/functions across most drifTech software"
 readme = "README.md"
