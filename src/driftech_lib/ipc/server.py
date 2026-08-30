@@ -121,7 +121,7 @@ class ConcurrentServer():
             heartbeat = asyncio.create_task(self._heartbeat(conn))
             self.connections[conn] = heartbeat
         if len(message) != 1:
-            message = message[1]
+            message = message[1].strip()
             if (message == b"exit"):
                 await self._close(conn)
             else:
