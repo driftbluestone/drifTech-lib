@@ -101,7 +101,6 @@ class ConcurrentClient(server.ConcurrentServer):
         if message == b"heartbeat\n":
             self.heartbeat.cancel()
             self.heartbeat = asyncio.create_task(self._heartbeat())
-            logger.info("heartbeat")
             writer.write(b"heartbeat\n")
             await writer.drain()
             return

@@ -143,7 +143,6 @@ class ConcurrentServer():
         connection = (conn.split(":")[0], int(conn.split(":")[1]))
         try:
             while True:
-                logger.info(f"heartbeat for {conn}")
                 await asyncio.sleep(30)
                 async with _AsyncConnection(*connection) as (reader, writer):
                     writer.write(b"heartbeat\n")
