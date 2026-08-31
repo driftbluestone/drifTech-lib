@@ -25,7 +25,7 @@ class Server:
         self.writer = writer
         self.command_queue: asyncio.Queue[bytes] = asyncio.Queue(10)
         self.conn_count = 1
-        self.connections: dict[int, Server] = {}
+        self.connections: dict[str, Server] = {}
 
     async def start(self, HOST = "127.0.0.1", PORT = 8000):
         server = await asyncio.start_server(self._interface, HOST, PORT)
@@ -35,16 +35,17 @@ class Server:
 
     async def _interface(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         addr, port = writer.get_extra_info("peername")
-        logger.info(f"[CONNECTION] Connection opened for {addr}:{port} #{self.conn_count}")
+        ip = f"{addr}:{port}"
+        logger.info(f"[CONNECTION] Connection opened for {ip} #{self.conn_count}")
         self.conn_count += 1
         try:
             conn = self.__class__(addr, port, reader, writer)
-            self.connections[port] = conn
+            self.connections[ip] = conn
             await conn._run()
         except (asyncio.CancelledError, ConnectionResetError, BrokenPipeError, OSError):
             pass
         self.conn_count -= 1
-        logger.info(f"[DISCONNECTED] Connection closed for {addr}:{port} #{self.conn_count-1}")
+        logger.info(f"[DISCONNECTED] Connection closed for {ip} #{self.conn_count-1}")
 
     async def _run(self):
         listen_task = asyncio.create_task(self._listen())
