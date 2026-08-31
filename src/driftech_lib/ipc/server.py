@@ -137,9 +137,11 @@ class ConcurrentServer():
         await self.command_queue.put((target, message))
 
     async def _close(self, conn: str):
-        self.connections[conn].cancel()
-        self.connections.pop(conn, None)
-        logger.info(f"[DISCONNECTED] Connection closed for {conn}")
+        hb = self.connections.get(conn)
+        if hb:
+            hb.cancel()
+            self.connections.pop(conn, None)
+            logger.info(f"[DISCONNECTED] Connection closed for {conn}")
     
     async def _heartbeat(self, conn: str):
         connection = (conn.split(":")[0], int(conn.split(":")[1]))

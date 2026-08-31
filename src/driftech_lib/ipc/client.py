@@ -135,14 +135,16 @@ class ConcurrentClient(server.ConcurrentServer):
     async def _send(self):
         while True:
             message = await self.command_queue.get()
-            message = message.strip() + b"\n"
+            message += b"\n"
             
             if not message:
                 continue
-            
+
             async with server._AsyncConnection(self.HOST, self.CLIENT_PORT) as (reader, writer):
                 writer.write(message)
                 await writer.drain()
+            
             if message.split(b" ", 1)[1] == b"exit\n":
                 logger.info(f"Closing connection for {self.HOST}:{self.CLIENT_PORT}")
+                self.heartbeat.cancel()
                 break
