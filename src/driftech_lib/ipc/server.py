@@ -1,4 +1,5 @@
 import asyncio
+from nacl.public import Box, PrivateKey, PublicKey
 from .. import logging
 logger = logging.Logger("ipc/server")
 __all__ = ["Server", "ConcurrentServer", "logger"]
@@ -26,6 +27,7 @@ class Server:
         self.command_queue: asyncio.Queue[bytes] = asyncio.Queue(10)
         self.conn_count = 1
         self.connections: dict[str, Server] = {}
+        
 
     async def start(self, HOST = "127.0.0.1", PORT = 8000):
         server = await asyncio.start_server(self._interface, HOST, PORT)
@@ -100,11 +102,14 @@ class Server:
 
 class ConcurrentServer():
     """Implementation of `Server` that supports multiple connections on the same port."""
-    def __init__(self, HOST: str = "127.0.0.1", PORT: int = 8000):
+    def __init__(self, HOST: str = "127.0.0.1", PORT: int = 8000, encrypted: bool = True):
+        self.private = PrivateKey.generate()
+        self.encrypted = encrypted
         self.HOST = HOST
         self.PORT = PORT
         self.connections: dict[str, asyncio.Task] = {}
         self.command_queue: asyncio.Queue[tuple[str, bytes]] = asyncio.Queue(10)
+        self.keys: dict[str, Box] = {}
 
     async def start(self):
         asyncio.create_task(self._send())
@@ -112,17 +117,28 @@ class ConcurrentServer():
 
     async def _interface(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         addr, _ = writer.get_extra_info("peername")
-        message = await reader.readline()
+        message = await reader.read(4096)
         message = message.split(b" ", 1)
         
         port = int(message[0])
         conn = f"{addr}:{port}"
+        
         if self.connections.get(f"{addr}:{port}") is None:
             logger.info(f"[CONNECTION] Connection opened for {conn}")
             heartbeat = asyncio.create_task(self._heartbeat(conn))
             self.connections[conn] = heartbeat
+
+            if self.encrypted:
+                writer.write(bytes(self.private.public_key))
+                await writer.drain()
+                key = PublicKey(await reader.read(32))
+                self.keys[conn] = Box(self.private, key)
+                logger.info("Connection Encrypted")
+        
         if len(message) != 1:
-            message = message[1].strip()
+            message = message[1]
+            if self.encrypted:
+                message = self.keys[conn].decrypt(message)
             if (message == b"exit"):
                 await self._close(conn)
             else:
@@ -133,12 +149,13 @@ class ConcurrentServer():
     async def send_message(self, target: str, message: bytes):
         if isinstance(message, str):
             message = message.encode()
-        if not message.endswith(b"\n"):
-            message += b"\n"
         await self.command_queue.put((target, message))
 
     async def _close(self, conn: str):
         hb = self.connections.get(conn)
+        key = self.keys.get(conn)
+        if key:
+            self.keys.pop(key, None)
         if hb:
             hb.cancel()
             self.connections.pop(conn, None)
@@ -180,6 +197,9 @@ class ConcurrentServer():
                 logger.info(f"Closing connection for {conn}")
                 await self._close(conn)
                 break
+
+            if self.encrypted:
+                message = self.keys[conn].encrypt(message)
 
             async with _AsyncConnection(*connection) as (reader, writer):
                 writer.write(message)

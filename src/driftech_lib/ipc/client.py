@@ -1,4 +1,5 @@
 import asyncio
+from nacl.public import Box, PrivateKey, PublicKey
 from .. import logging
 from . import server
 logger = logging.Logger("ipc/client")
@@ -83,7 +84,10 @@ class ConcurrentClient(server.ConcurrentServer):
     
     `CLIENT_PORT` must be different from `PORT` if the two are on the same computer.
     """
-    def __init__(self, HOST = "127.0.0.1", PORT = 8000, CLIENT_PORT = 8001):
+    def __init__(self, HOST = "127.0.0.1", PORT = 8000, CLIENT_PORT = 8001, encrypted: bool = True):
+        self.encrypted = encrypted
+        self.key = PrivateKey.generate()
+        self.host_key = None
         super().__init__(HOST, CLIENT_PORT)
         self.CLIENT_PORT = PORT
         self.command_queue: asyncio.Queue[bytes]
@@ -93,41 +97,42 @@ class ConcurrentClient(server.ConcurrentServer):
             writer.write(str(self.PORT).encode() + b"\n")
             await writer.drain()
             logger.info(f"[CONNECTION] Connection to {self.HOST}:{self.CLIENT_PORT} opened")
+            if self.encrypted:
+                key = PublicKey(await reader.read(32))
+                self.host_key = Box(self.private, key)
+                writer.write(bytes(self.private.public_key))
+                await writer.drain()
+                logger.info("Connection Encrypted")
         self.heartbeat = asyncio.create_task(self._heartbeat())
         await super().start()
 
     async def _interface(self, reader, writer):
-        message = await reader.readline()
+        message = await reader.read(4096)
         if message == b"heartbeat\n":
             self.heartbeat.cancel()
             self.heartbeat = asyncio.create_task(self._heartbeat())
             writer.write(b"heartbeat\n")
             await writer.drain()
             return
-        
+        if self.encrypted:
+            message = self.host_key.decrypt(message)
         await self.on_message(message)
 
     async def _heartbeat(self):
-        failed_attempts = 0
-        while True:
-            await asyncio.sleep(30 * (2 << failed_attempts))
-            failed_attempts += 1
-            logger.warn("Client did not recieve heartbeat. Retrying connection...")
-            try:
-                async with server._AsyncConnection(self.HOST, self.CLIENT_PORT) as (reader, writer):
-                    writer.write(str(self.PORT).encode())
-                    await writer.drain()
-                    logger.info(f"[CONNECTION] Connection to {self.HOST}:{self.CLIENT_PORT} reopened")
-            except ConnectionRefusedError:
-                continue
+        await asyncio.sleep(60)
+        logger.warn("Client did not recieve heartbeat. Connection Closed.")
+        self.heartbeat = asyncio.create_task(self._heartbeat())
+        await self.send_message(b"exit")
 
-    async def on_message(self, message):
+    async def on_message(self, message: bytes):
         """Override this function."""
         pass
 
     async def send_message(self, message):
         if isinstance(message, str):
             message = message.encode()
+        if self.encrypted:
+            message = bytes(self.host_key.encrypt(message))
         message = str(self.PORT).encode() + b" " + message
         
         await self.command_queue.put(message)
@@ -135,7 +140,6 @@ class ConcurrentClient(server.ConcurrentServer):
     async def _send(self):
         while True:
             message = await self.command_queue.get()
-            message += b"\n"
             
             if not message:
                 continue
@@ -144,7 +148,7 @@ class ConcurrentClient(server.ConcurrentServer):
                 writer.write(message)
                 await writer.drain()
             
-            if message.split(b" ", 1)[1] == b"exit\n":
+            if message.split(b" ", 1)[1] == b"exit":
                 logger.info(f"Closing connection for {self.HOST}:{self.CLIENT_PORT}")
                 self.heartbeat.cancel()
                 break
