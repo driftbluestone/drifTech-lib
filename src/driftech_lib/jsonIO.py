@@ -8,12 +8,14 @@ Functions suffixed with `s` or `b` input / return string or bytes, respectively
 import orjson, asyncio
 from pathlib import Path
 from orjson import JSONDecodeError
+
 __all__ = [
     "read", "load", "write", "dump",
     "dumps", "dumpb", "loads", "loadb",
     "aread", "aload", "awrite", "adump",
     "JSONDecodeError"
     ]
+
 def read(path: str | Path) -> object:
     with open(path, "rb") as file:
         return orjson.loads(file.read())
